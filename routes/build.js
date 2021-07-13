@@ -12,6 +12,7 @@ const router = new Router();
 router.post("/build", async (ctx) => {
   const { appName, gitPath, commit, id } = ctx.request.body;
 
+  const baseDir = path.resolve(config.appDir);
   const appDir = path.resolve(config.appDir, appName);
 
   try {
@@ -25,7 +26,7 @@ router.post("/build", async (ctx) => {
       await git.checkout(commit);
     } else {
       const git = simpleGit({
-        baseDir: path.resolve(config.appDir),
+        baseDir,
         binary: "git",
       });
       await git.clone(gitPath);
@@ -37,9 +38,9 @@ router.post("/build", async (ctx) => {
   }
 
   exec(
-    `npm run build > 1.txt`,
+    `npm run build > ${path.resolve(baseDir, appName + "-" + commit)}.log`,
     {
-      cwd: "/Users/jiaoyu/Documents/test/rc-build", // appDir
+      cwd: appDir,
     },
     async (err) => {
       const param = { id };
@@ -61,10 +62,15 @@ router.post("/build", async (ctx) => {
   ctx.body = { id };
 });
 
-router.post("/output", async (ctx) => {
-  const { path, branch, commit } = ctx.request.body;
+router.get("/output", async (ctx) => {
+  const { appName, commit } = ctx.request.query;
+  const logDir = path.resolve(config.appDir, `${appName}-${commit}.log`);
 
-  ctx.body = 'ok';
+  if (fs.existsSync(logDir)) {
+    ctx.body = fs.createReadStream(logDir);
+  } else {
+    ctx.body = "";
+  }
 });
 
 module.exports = router.routes();

@@ -15,6 +15,20 @@ router.post("/build", async (ctx) => {
   const baseDir = path.resolve(config.appDir);
   const appDir = path.resolve(config.appDir, appName);
 
+  if (fs.existsSync(path.resolve(baseDir, appName + "-" + commit + "-dist"))) {
+    ctx.body = { id, cached: true };
+    await axios({
+      url: `${config.centerServer}/publish/buildResult`,
+      method: "post",
+      headers: { "Content-Type": "application/json" },
+      data: {
+        id,
+        result: "success",
+      },
+    });
+    return;
+  }
+
   try {
     if (fs.existsSync(appDir)) {
       const git = simpleGit({
@@ -33,12 +47,19 @@ router.post("/build", async (ctx) => {
       await git.checkout(commit);
     }
   } catch (e) {
+    ctx.status = 500;
     ctx.body = { message: e.message };
     return;
   }
 
+  ctx.body = { id };
+
+  // 打包
   exec(
-    `npm run build > ${path.resolve(baseDir, appName + "-" + commit)}.log`,
+    `npm run install && npm run build > ${path.resolve(
+      baseDir,
+      appName + "-" + commit
+    )}.log`,
     {
       cwd: appDir,
     },
@@ -46,6 +67,11 @@ router.post("/build", async (ctx) => {
       const param = { id };
       if (err) {
         param.result = "fail";
+        const ws = fs.createWriteStream(
+          path.resolve(baseDir, `${appName}-${commit}.log`)
+        );
+        ws.write(err.message);
+        ws.end();
       } else {
         param.result = "success";
       }
@@ -56,10 +82,22 @@ router.post("/build", async (ctx) => {
         headers: { "Content-Type": "application/json" },
         data: param,
       });
+
+      // 拷贝结果
+      !err &&
+        exec(
+          `cp -r ${path.resolve(appDir, "dist")} ${path.resolve(
+            baseDir
+          )} && mv ${path.resolve(baseDir, "dist")} ${path.resolve(
+            baseDir,
+            appName + "-" + commit + "-dist"
+          )}`,
+          {
+            cwd: baseDir,
+          }
+        );
     }
   );
-
-  ctx.body = { id };
 });
 
 router.get("/output", async (ctx) => {

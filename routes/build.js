@@ -15,6 +15,11 @@ router.post("/build", async (ctx) => {
   const baseDir = path.resolve(config.appDir);
   const appDir = path.resolve(config.appDir, appName);
 
+  if (fs.existsSync(baseDir)) {
+    fs.mkdirSync(baseDir, { recursive: true });
+  }
+
+  // 已有打包目录，认为打包过，直接读取
   if (fs.existsSync(path.resolve(baseDir, appName + "-" + commit + "-dist"))) {
     ctx.body = { id, cached: true };
     await axios({
@@ -30,6 +35,7 @@ router.post("/build", async (ctx) => {
   }
 
   try {
+    // 已存在工程目录，直接拉取
     if (fs.existsSync(appDir)) {
       const git = simpleGit({
         baseDir: appDir,
@@ -39,6 +45,7 @@ router.post("/build", async (ctx) => {
       await git.pull();
       await git.checkout(commit);
     } else {
+      // 工程目录不存在，clone
       const git = simpleGit({
         baseDir,
         binary: "git",

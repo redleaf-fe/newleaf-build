@@ -77,7 +77,7 @@ router.post("/build", async (ctx) => {
 
   // 打包
   exec(
-    `yarn && yarn build > ${logPath}`,
+    `yarn >> ${logPath} && yarn build >> ${logPath}`,
     {
       cwd: appPath,
     },

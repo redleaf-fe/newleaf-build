@@ -7,20 +7,9 @@ const axios = require("axios");
 const AdmZip = require("adm-zip");
 
 const config = require("../env.json");
+const { changeBusy } = require("../const");
 
 const router = new Router();
-
-function buildRes({ id, result }) {
-  axios({
-    url: `${config.centerServer}/publish/buildResult`,
-    method: "post",
-    headers: { "Content-Type": "application/json" },
-    data: {
-      id,
-      result,
-    },
-  });
-}
 
 router.post("/build", async (ctx) => {
   const { appName, gitPath, commit, id, scpPath } = ctx.request.body;
@@ -29,17 +18,25 @@ router.post("/build", async (ctx) => {
   const appPath = path.resolve(config.appDir, appName);
   const logPath = path.resolve(basePath, `${appName}-${commit}.log`);
   const appDistPath = path.resolve(appPath, "dist");
-  // const appZipPath = path.resolve(appPath, `${appName}-${commit}-dist.zip`);
   const baseZipPath = path.resolve(basePath, `${appName}-${commit}-dist.zip`);
 
   function transfer() {
     exec(`scp -r ${baseZipPath} ${scpPath}`, (err2) => {
       if (err2) {
-        buildRes({ id, result: "fail" });
+        buildRes("fail");
         fs.writeFileSync(logPath, JSON.stringify(err2), { flag: "a" });
       } else {
-        buildRes({ id, result: "success" });
+        buildRes("success");
       }
+    });
+  }
+
+  function buildRes(result) {
+    axios({
+      url: `${config.centerServer}/publish/buildResult`,
+      method: "post",
+      headers: { "Content-Type": "application/json" },
+      data: {id,result,},
     });
   }
 
@@ -75,6 +72,7 @@ router.post("/build", async (ctx) => {
 
   ctx.body = { id };
 
+  changeBusy(true);
   // 打包
   exec(
     `yarn >> ${logPath} && yarn build >> ${logPath}`,
@@ -83,7 +81,7 @@ router.post("/build", async (ctx) => {
     },
     (err) => {
       if (err) {
-        buildRes({ id, result: "fail" });
+        buildRes("fail");
         fs.writeFileSync(logPath, JSON.stringify(err), { flag: "a" });
       } else {
         // TODO：压缩文件可改为异步
@@ -93,6 +91,7 @@ router.post("/build", async (ctx) => {
 
         transfer();
       }
+      changeBusy(false);
     }
   );
 });

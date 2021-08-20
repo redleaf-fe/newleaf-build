@@ -7,7 +7,6 @@ const axios = require("axios");
 const AdmZip = require("adm-zip");
 
 const config = require("../env.json");
-const { changeBusy } = require("../const");
 
 const router = new Router();
 
@@ -72,7 +71,6 @@ router.post("/build", async (ctx) => {
 
   ctx.body = { id };
 
-  changeBusy(true);
   // 打包
   exec(
     `yarn >> ${logPath} && yarn build >> ${logPath}`,
@@ -91,7 +89,6 @@ router.post("/build", async (ctx) => {
 
         transfer();
       }
-      changeBusy(false);
     }
   );
 });

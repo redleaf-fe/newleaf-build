@@ -7,7 +7,6 @@ const axios = require("axios");
 
 const redisKey = require("./redisKey");
 const config = require("./env.json");
-const { getBusy } = require("./const");
 
 function getIPAddress() {
   const interfaces = os.networkInterfaces();
@@ -49,8 +48,7 @@ async function main() {
 
   app.use(BodyParser());
 
-  require("./routes")(router);
-
+  router.use(require("./build"));
   app.use(router.routes());
   app.use(router.allowedMethods());
 
@@ -73,7 +71,7 @@ async function main() {
 
     // 判断打包结果是否已存在
     const zipPath = path.resolve(basePath, `${appName}-${commit}-dist.zip`);
-    if (fs.existsSync(zipPath) || !getBusy()) {
+    if (fs.existsSync(zipPath)) {
       axios({
         url: `${config.centerServer}/publish/buildServer`,
         method: "post",

@@ -4,6 +4,9 @@ const Logger = require("koa-logger");
 const BodyParser = require("koa-body");
 const redis = require("redis");
 const axios = require("axios");
+const os = require("os");
+const fs = require("fs");
+const path = require("path");
 
 const redisKey = require("./redisKey");
 const config = require("./env.json");
@@ -70,8 +73,17 @@ async function main() {
     const { id, appId, commit, appName } = val || {};
 
     // 判断打包结果是否已存在
-    const zipPath = path.resolve(basePath, `${appName}-${commit}-dist.zip`);
+    const zipPath = path.resolve(
+      path.resolve(config.appDir),
+      `${appName}-${commit}-dist.zip`
+    );
     if (fs.existsSync(zipPath)) {
+      sendBack();
+    } else {
+      setTimeout(sendBack, 1000);
+    }
+
+    function sendBack() {
       axios({
         url: `${config.centerServer}/publish/buildServer`,
         method: "post",

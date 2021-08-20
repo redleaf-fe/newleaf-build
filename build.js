@@ -6,7 +6,7 @@ const { exec } = require("child_process");
 const axios = require("axios");
 const AdmZip = require("adm-zip");
 
-const config = require("../env.json");
+const config = require("./env.json");
 
 const router = new Router();
 
@@ -35,7 +35,7 @@ router.post("/build", async (ctx) => {
       url: `${config.centerServer}/publish/buildResult`,
       method: "post",
       headers: { "Content-Type": "application/json" },
-      data: {id,result,},
+      data: { id, result },
     });
   }
 

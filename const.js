@@ -1,5 +1,10 @@
+let isBusy = false;
+
 module.exports = {
-  errCode: {
-    distNotExist: 1001,
+  getBusy(){
+    return isBusy;
   },
+  changeBusy(busy){
+    isBusy =  busy;
+  }
 };

@@ -70,7 +70,7 @@ async function main() {
           appId,
           commit,
           appName,
-          addr: `http://${buildAddress}:${config.serverPort}`,
+          addr: `http://${config.buildAddress}:${config.serverPort}`,
         },
       });
     }
